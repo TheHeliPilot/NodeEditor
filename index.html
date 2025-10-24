@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Node Editor</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="toolbar">
+        <button class="btn" onclick="createNode()">+ Node</button>
+        <button class="btn warning" onclick="addComment()">+ Comment</button>
+        <div class="separator"></div>
+        <button class="btn" onclick="saveToFile()">Save</button>
+        <button class="btn" onclick="loadFromFile()">Load</button>
+        <button class="btn danger" onclick="clearAll()">Clear All</button>
+        <input type="file" id="file-input" style="display: none;" accept=".json" onchange="handleFileLoad(event)">
+    </div>
+
+    <div id="canvas-container">
+        <div id="background-grid"></div>
+        <svg id="svg-canvas"></svg>
+        <div id="canvas"></div>
+    </div>
+
+    <div class="zoom-info">
+        <div>Zoom: <span id="zoom-level">100%</span></div>
+    </div>
+
+    <div class="instructions">
+        <h4 onclick="toggleInstructions()">
+            <span>Controls</span>
+            <span class="toggle-icon">▼</span>
+        </h4>
+        <div class="instructions-content">
+            <ul>
+                <li>Click: Select node</li>
+                <li>Shift+Click: Multi-select</li>
+                <li>Drag empty space: Select area</li>
+                <li>Drag header: Move node(s)</li>
+                <li>Drag corners/edges: Resize</li>
+                <li>Double-click title: Rename</li>
+                <li>Color dot: Change color</li>
+                <li>+ buttons: Add connections</li>
+                <li>Right-click dot: Remove</li>
+                <li>Wheel: Zoom</li>
+                <li>Middle-click: Pan</li>
+                <li>Right-click line: Delete</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="color-picker" class="color-picker">
+        <div class="color-grid"></div>
+        <div class="custom-color-section">
+            <button class="custom-color-btn" onclick="openColorWheel()">✨ Custom Color</button>
+        </div>
+    </div>
+
+    <div id="color-wheel-picker" class="color-wheel-picker">
+        <canvas id="color-wheel-canvas" class="color-wheel-canvas" width="200" height="200"></canvas>
+        <div class="color-preview">
+            <div id="color-preview-box" class="color-preview-box"></div>
+            <div class="color-input-group">
+                <input type="text" id="color-hex-input" class="color-hex-input" placeholder="#000000" maxlength="7">
+            </div>
+        </div>
+        <div class="color-wheel-buttons">
+            <button class="color-wheel-btn cancel" onclick="closeColorWheel()">Cancel</button>
+            <button class="color-wheel-btn apply" onclick="applyCustomColor()">Apply</button>
+        </div>
+    </div>
+
+    <!-- Load scripts in order -->
+    <script src="js/state.js"></script>
+    <script src="js/viewport.js"></script>
+    <script src="js/selection.js"></script>
+    <script src="js/connections.js"></script>
+    <script src="js/nodes.js"></script>
+    <script src="js/comments.js"></script>
+    <script src="js/color-picker.js"></script>
+    <script src="js/file-operations.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
