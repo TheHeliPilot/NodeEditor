@@ -12,11 +12,19 @@ function init() {
     colorWheelCanvas = document.getElementById('color-wheel-canvas');
     colorPreviewBox = document.getElementById('color-preview-box');
     colorHexInput = document.getElementById('color-hex-input');
+    dialoguePanel = document.getElementById('dialogue-panel');
+    dialogueContent = document.getElementById('dialogue-content');
+    variablePanel = document.getElementById('variable-panel');
+    variableList = document.getElementById('variable-list');
 
     setupEventListeners();
     initColorPicker();
     initColorWheel();
     updateTransform();
+    updateBreadcrumbs();
+
+    // Auto-create START node in root if it doesn't exist
+    ensureRootStartNode();
 }
 
 function setupEventListeners() {
@@ -27,11 +35,24 @@ function setupEventListeners() {
     canvasContainer.addEventListener('contextmenu', (e) => e.preventDefault());
 
     document.addEventListener('click', (e) => {
-        if (!colorPicker.contains(e.target) && !e.target.classList.contains('color-btn')) {
+        // Don't close color picker if color wheel is open or if clicking on custom color button
+        const isColorWheelOpen = colorWheelPicker.classList.contains('active');
+        const clickedCustomBtn = e.target.classList.contains('custom-color-btn');
+
+        if (!colorPicker.contains(e.target) && !e.target.classList.contains('color-btn') && !isColorWheelOpen) {
             colorPicker.classList.remove('active');
         }
-        if (!colorWheelPicker.contains(e.target) && !e.target.classList.contains('custom-color-btn')) {
+
+        if (!colorWheelPicker.contains(e.target) && !clickedCustomBtn) {
             colorWheelPicker.classList.remove('active');
+        }
+    });
+
+    // Space key for advancing execution
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && isPlaying) {
+            e.preventDefault();
+            advanceExecution();
         }
     });
 }

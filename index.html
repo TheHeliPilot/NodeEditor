@@ -9,12 +9,25 @@
 <body>
     <div id="toolbar">
         <button class="btn" onclick="createNode()">+ Node</button>
+        <button class="btn" onclick="createGroupNode()">+ Group</button>
         <button class="btn warning" onclick="addComment()">+ Comment</button>
+        <div class="separator"></div>
+        <button class="btn" onclick="toggleVariablePanel()">Variables</button>
+        <button class="btn" onclick="createBranchNode()">+ Branch</button>
+        <button class="btn" onclick="createMathNode('add')">+ Math</button>
+        <div class="separator"></div>
+        <button id="play-btn" class="btn" style="background: #28a745;" onclick="togglePlay()">▶ Play</button>
         <div class="separator"></div>
         <button class="btn" onclick="saveToFile()">Save</button>
         <button class="btn" onclick="loadFromFile()">Load</button>
         <button class="btn danger" onclick="clearAll()">Clear All</button>
         <input type="file" id="file-input" style="display: none;" accept=".json" onchange="handleFileLoad(event)">
+    </div>
+
+    <div id="breadcrumb-bar">
+        <div id="breadcrumb-container"></div>
+        <button id="add-out-btn" class="breadcrumb-back-btn" onclick="addOutNodeToCurrentGroup()" style="display: none; margin-right: 10px; background: #fd7e14;">+ OUT</button>
+        <button id="back-button" class="breadcrumb-back-btn" onclick="closeGroup()" style="display: none;">← Back</button>
     </div>
 
     <div id="canvas-container">
@@ -23,11 +36,44 @@
         <div id="canvas"></div>
     </div>
 
+    <div id="variable-panel" class="variable-panel">
+        <div class="variable-header">
+            <div class="variable-title">Variables</div>
+            <button class="variable-close-btn" onclick="toggleVariablePanel()">×</button>
+        </div>
+        <div class="variable-content">
+            <div class="variable-add-section">
+                <input type="text" id="var-name-input" class="var-input" placeholder="Variable name">
+                <select id="var-type-select" class="var-select">
+                    <option value="Number">Number</option>
+                    <option value="String">String</option>
+                    <option value="Boolean">Boolean</option>
+                </select>
+                <button class="btn" onclick="addVariable()">+ Add</button>
+            </div>
+            <div id="variable-list" class="variable-list">
+                <!-- Variables will be listed here -->
+            </div>
+        </div>
+    </div>
+
+    <div id="dialogue-panel" class="dialogue-panel">
+        <div class="dialogue-header">
+            <div class="dialogue-title">Dialogue History</div>
+        </div>
+        <div class="dialogue-content" id="dialogue-content">
+            <!-- Messages will be appended here -->
+        </div>
+        <div class="dialogue-footer">
+            <span class="dialogue-hint">Press SPACE to continue</span>
+        </div>
+    </div>
+
     <div class="zoom-info">
         <div>Zoom: <span id="zoom-level">100%</span></div>
     </div>
 
-    <div class="instructions">
+    <div class="instructions collapsed">
         <h4 onclick="toggleInstructions()">
             <span>Controls</span>
             <span class="toggle-icon">▼</span>
@@ -40,11 +86,12 @@
                 <li>Drag header: Move node(s)</li>
                 <li>Drag corners/edges: Resize</li>
                 <li>Double-click title: Rename</li>
+                <li>Double-click group header: Open group</li>
                 <li>Color dot: Change color</li>
                 <li>+ buttons: Add connections</li>
                 <li>Right-click dot: Remove</li>
                 <li>Wheel: Zoom</li>
-                <li>Middle-click: Pan</li>
+                <li>Middle/Right-click: Pan</li>
                 <li>Right-click line: Delete</li>
             </ul>
         </div>
@@ -58,10 +105,12 @@
     </div>
 
     <div id="color-wheel-picker" class="color-wheel-picker">
+        <div class="color-wheel-title">Custom Color Picker</div>
         <canvas id="color-wheel-canvas" class="color-wheel-canvas" width="200" height="200"></canvas>
         <div class="color-preview">
             <div id="color-preview-box" class="color-preview-box"></div>
             <div class="color-input-group">
+                <label>Hex Color</label>
                 <input type="text" id="color-hex-input" class="color-hex-input" placeholder="#000000" maxlength="7">
             </div>
         </div>
@@ -78,6 +127,9 @@
     <script src="js/connections.js"></script>
     <script src="js/nodes.js"></script>
     <script src="js/comments.js"></script>
+    <script src="js/groups.js"></script>
+    <script src="js/execution.js"></script>
+    <script src="js/variables.js"></script>
     <script src="js/color-picker.js"></script>
     <script src="js/file-operations.js"></script>
     <script src="js/main.js"></script>

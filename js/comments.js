@@ -1,6 +1,7 @@
 // Comment Areas - Background boxes for organizing nodes
 
 function addComment() {
+    if (isPlaying) return;
     const id = commentIdCounter++;
 
     const rect = canvasContainer.getBoundingClientRect();
@@ -15,7 +16,8 @@ function addComment() {
         width: 400,
         height: 300,
         title: 'Comment ' + id,
-        color: '#ffc107'
+        color: '#ffc107',
+        parentGroup: currentGroupId
     };
 
     comments.push(comment);
@@ -105,6 +107,7 @@ function updateCommentTitle(commentId, title) {
 }
 
 function deleteComment(commentId) {
+    if (isPlaying) return;
     comments = comments.filter(c => c.id !== commentId);
     const el = document.getElementById(`comment-${commentId}`);
     if (el) el.remove();

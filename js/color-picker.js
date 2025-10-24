@@ -49,13 +49,17 @@ function initColorWheel() {
     ctx.globalCompositeOperation = "source-over";
 
     // --- Interaction helpers ---
+    const canvasContainer = document.createElement('div');
+    canvasContainer.style.position = 'relative';
+    canvasContainer.style.display = 'inline-block';
+
     const ring = document.createElement('div');
     ring.className = 'color-wheel-ring';
-    colorWheelPicker.appendChild(ring);
 
-    const preview = document.createElement('div');
-    preview.className = 'color-wheel-center-preview';
-    colorWheelPicker.appendChild(preview);
+    // Wrap canvas in container for absolute positioning of ring
+    colorWheelCanvas.parentElement.insertBefore(canvasContainer, colorWheelCanvas);
+    canvasContainer.appendChild(colorWheelCanvas);
+    canvasContainer.appendChild(ring);
 
     let isDragging = false;
 
@@ -80,11 +84,9 @@ function initColorWheel() {
     colorWheelCanvas.addEventListener('mouseleave', () => isDragging = false);
 
     function updateRing(x, y, color) {
-        ring.style.left = `${x - 10}px`;
-        ring.style.top = `${y - 10}px`;
+        ring.style.left = `${x}px`;
+        ring.style.top = `${y}px`;
         ring.style.background = color;
-        preview.style.background = color;
-        colorWheelPicker.style.boxShadow = `0 0 30px 6px ${hexToRgba(color, 0.4)}`;
     }
 }
 
@@ -154,6 +156,22 @@ function updateColorPreview(color) {
     colorHexInput.value = color;
 }
 
+// Add input event listener for manual hex entry
+if (colorHexInput) {
+    colorHexInput.addEventListener('input', (e) => {
+        let value = e.target.value;
+        // Ensure it starts with #
+        if (!value.startsWith('#')) {
+            value = '#' + value;
+        }
+        // Update if valid hex color
+        if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+            selectedCustomColor = value;
+            colorPreviewBox.style.background = value;
+        }
+    });
+}
+
 function toggleInstructions() {
     const instructions = document.querySelector('.instructions');
     instructions.classList.toggle('collapsed');
@@ -162,31 +180,90 @@ function toggleInstructions() {
 function openColorWheel() {
     customColorPickerTarget = colorPickerTarget;
     colorWheelPicker.classList.add('active');
-    
-    // Position near color picker
+
+    // Position near color picker with viewport boundary detection
     const pickerRect = colorPicker.getBoundingClientRect();
-    colorWheelPicker.style.left = pickerRect.right + 10 + 'px';
-    colorWheelPicker.style.top = pickerRect.top + 'px';
-    
+    const wheelWidth = 320; // Approximate width
+    const wheelHeight = 400; // Approximate height
+    const bottomMargin = 80; // Extra margin for taskbar
+
+    let left = pickerRect.right + 10;
+    let top = pickerRect.top;
+
+    // If it would go off right edge, position to the left of color picker
+    if (left + wheelWidth > window.innerWidth) {
+        left = pickerRect.left - wheelWidth - 10;
+    }
+
+    // If still off left edge, center on screen
+    if (left < 10) {
+        left = (window.innerWidth - wheelWidth) / 2;
+    }
+
+    // Check bottom boundary
+    if (top + wheelHeight > window.innerHeight - bottomMargin) {
+        top = window.innerHeight - wheelHeight - bottomMargin;
+    }
+
+    // Check top boundary
+    if (top < 10) {
+        top = 10;
+    }
+
+    colorWheelPicker.style.left = left + 'px';
+    colorWheelPicker.style.top = top + 'px';
+
     updateColorPreview(selectedCustomColor);
 }
 
 function closeColorWheel() {
     colorWheelPicker.classList.remove('active');
+    // Also close the color picker when closing the wheel
+    colorPicker.classList.remove('active');
 }
 
 function applyCustomColor() {
     if (customColorPickerTarget) {
         applyColor(selectedCustomColor);
     }
-    closeColorWheel();
+    colorWheelPicker.classList.remove('active');
+    colorPicker.classList.remove('active');
 }
 
 function showColorPicker(e, id, type) {
     e.stopPropagation();
     colorPickerTarget = { id, type };
-    colorPicker.style.left = e.clientX + 'px';
-    colorPicker.style.top = e.clientY + 'px';
+
+    // Position with viewport boundary detection
+    const pickerWidth = 200; // Approximate width
+    const pickerHeight = 250; // Approximate height
+    const bottomMargin = 80; // Extra margin for taskbar
+
+    let left = e.clientX;
+    let top = e.clientY;
+
+    // Check right boundary
+    if (left + pickerWidth > window.innerWidth) {
+        left = window.innerWidth - pickerWidth - 10;
+    }
+
+    // Check bottom boundary
+    if (top + pickerHeight > window.innerHeight - bottomMargin) {
+        top = window.innerHeight - pickerHeight - bottomMargin;
+    }
+
+    // Check left boundary
+    if (left < 10) {
+        left = 10;
+    }
+
+    // Check top boundary
+    if (top < 10) {
+        top = 10;
+    }
+
+    colorPicker.style.left = left + 'px';
+    colorPicker.style.top = top + 'px';
     colorPicker.classList.add('active');
 }
 
@@ -201,6 +278,7 @@ function applyColor(color) {
             node.color = color;
             const nodeEl = document.getElementById(`node-${id}`);
             nodeEl.style.borderColor = color;
+            nodeEl.style.setProperty('--node-color', color);
             nodeEl.querySelector('.color-btn').style.background = color;
             nodeEl.querySelectorAll('.connection-point').forEach(pt => {
                 pt.style.color = color;

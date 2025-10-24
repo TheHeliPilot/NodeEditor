@@ -1,6 +1,9 @@
 // Viewport Management - Zoom, Pan, Coordinate Conversion
 
 function handleZoom(e) {
+    if (isColorPickerOpen()) return;
+    // Allow zoom during play mode (for viewing)
+
     e.preventDefault();
 
     const rect = canvasContainer.getBoundingClientRect();
@@ -49,6 +52,22 @@ function updateElementPosition(element, type) {
 }
 
 function handleCanvasPanStart(e) {
+    // Allow panning with middle/right click even during play mode
+    if (e.button === 1 || e.button === 2) {
+        if (isColorPickerOpen()) return;
+        isPanning = true;
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+        canvasContainer.classList.add('panning');
+        e.preventDefault();
+        return;
+    }
+
+    // Block other interactions if editing is blocked
+    if (isEditingBlocked()) {
+        return;
+    }
+
     // Start drag selection
     if (e.button === 0 && (e.target === canvasContainer || e.target === backgroundGrid || e.target === canvas)) {
         if (!e.shiftKey) {
@@ -68,14 +87,14 @@ function handleCanvasPanStart(e) {
         e.preventDefault();
         return;
     }
+}
 
-    if (e.button === 1) {
-        isPanning = true;
-        lastMouseX = e.clientX;
-        lastMouseY = e.clientY;
-        canvasContainer.classList.add('panning');
-        e.preventDefault();
-    }
+function isColorPickerOpen() {
+    return colorPicker && colorPicker.classList.contains('active');
+}
+
+function isEditingBlocked() {
+    return isColorPickerOpen() || isPlaying;
 }
 
 function handleMouseMove(e) {
@@ -124,6 +143,10 @@ function handleMouseMove(e) {
                         node.y += dy;
                         updateElementPosition(node, 'node');
                         updateConnectionsForNode(node.id);
+                        // If it's a group node, also update IN/OUT node connections
+                        if (node.isGroup) {
+                            updateGroupNodeConnections(node.id);
+                        }
                     }
                 }
             });
@@ -151,6 +174,10 @@ function handleMouseMove(e) {
                         node.y += dy;
                         updateElementPosition(node, 'node');
                         updateConnectionsForNode(node.id);
+                        // If it's a group node, also update IN/OUT node connections
+                        if (node.isGroup) {
+                            updateGroupNodeConnections(node.id);
+                        }
                     }
                 });
             }
@@ -158,6 +185,10 @@ function handleMouseMove(e) {
 
         if (dragState.type === 'node') {
             updateConnectionsForNode(dragState.element.id);
+            // If it's a group node, also update IN/OUT node connections
+            if (dragState.element.isGroup) {
+                updateGroupNodeConnections(dragState.element.id);
+            }
         }
     }
 
@@ -181,6 +212,10 @@ function handleMouseMove(e) {
 
         if (resizeState.type === 'node') {
             updateConnectionsForNode(element.id);
+            // If it's a group node, also update IN/OUT node connections
+            if (element.isGroup) {
+                updateGroupNodeConnections(element.id);
+            }
         }
     }
 
@@ -224,6 +259,8 @@ function handleMouseUp(e) {
 
 function startDrag(e, element, type) {
     if (e.button !== 0) return;
+    if (isEditingBlocked()) return;
+
     e.preventDefault();
     e.stopPropagation();
 
@@ -240,6 +277,8 @@ function startDrag(e, element, type) {
 }
 
 function startResize(e, element, direction, isComment) {
+    if (isEditingBlocked()) return;
+
     e.preventDefault();
     e.stopPropagation();
 

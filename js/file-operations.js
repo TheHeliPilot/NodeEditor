@@ -5,10 +5,14 @@ function saveToFile() {
         nodes: nodes,
         comments: comments,
         connections: connections,
+        variables: variables,
         nodeIdCounter: nodeIdCounter,
         commentIdCounter: commentIdCounter,
         connectionIdCounter: connectionIdCounter,
-        view: { zoom, panX, panY }
+        variableIdCounter: variableIdCounter,
+        view: { zoom, panX, panY },
+        currentGroupId: currentGroupId,
+        navigationStack: navigationStack
     };
 
     const json = JSON.stringify(data, null, 2);
@@ -48,9 +52,15 @@ function loadData(data) {
     nodes = data.nodes || [];
     comments = data.comments || [];
     connections = data.connections || [];
+    variables = data.variables || [];
     nodeIdCounter = data.nodeIdCounter || 1;
     commentIdCounter = data.commentIdCounter || 1;
     connectionIdCounter = data.connectionIdCounter || 1;
+    variableIdCounter = data.variableIdCounter || 1;
+
+    // Always start at root when loading
+    currentGroupId = null;
+    navigationStack = [];
 
     if (data.view) {
         zoom = data.view.zoom || 1;
@@ -58,10 +68,11 @@ function loadData(data) {
         panY = data.view.panY || 0;
     }
 
-    comments.forEach(comment => renderComment(comment));
-    nodes.forEach(node => renderNode(node));
-    connections.forEach(conn => renderConnection(conn));
-    updateTransform();
+    // Render root group
+    renderCurrentGroup();
+
+    // Render variables
+    renderVariableList();
 }
 
 function clearAll(skipConfirm = false) {
@@ -77,4 +88,7 @@ function clearAll(skipConfirm = false) {
     nodeIdCounter = 1;
     commentIdCounter = 1;
     connectionIdCounter = 1;
+    currentGroupId = null;
+    navigationStack = [];
+    updateBreadcrumbs();
 }

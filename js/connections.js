@@ -1,6 +1,8 @@
 // Connection Management - Lines between nodes
 
 function startConnection(e, nodeId, pointId) {
+    if (isEditingBlocked()) return;
+
     e.preventDefault();
     e.stopPropagation();
 
@@ -40,12 +42,84 @@ function endConnection(e, toNodeId, toPointId, type) {
         return;
     }
 
+    // Get connection types to validate
+    const fromNode = nodes.find(n => n.id === connectionStart.nodeId);
+    const toNode = nodes.find(n => n.id === toNodeId);
+
+    if (!fromNode || !toNode) {
+        cancelConnection();
+        return;
+    }
+
+    const fromOutput = fromNode.outputs.find(o => o.id === connectionStart.pointId);
+    const toInput = toNode.inputs.find(i => i.id === toPointId);
+
+    if (!fromOutput || !toInput) {
+        cancelConnection();
+        return;
+    }
+
+    const fromType = fromOutput.type || CONNECTION_TYPE.EXEC;
+    const toType = toInput.type || CONNECTION_TYPE.EXEC;
+
+    // Prevent connecting different types
+    if (fromType !== toType) {
+        alert('Cannot connect different types (execution vs data)');
+        cancelConnection();
+        return;
+    }
+
+    let finalFromNode = connectionStart.nodeId;
+    let finalFromPoint = connectionStart.pointId;
+    let finalToNode = toNodeId;
+    let finalToPoint = toPointId;
+
+    // If connecting FROM a group node output, find the corresponding OUT node
+    if (fromNode && fromNode.isGroup) {
+        const outputIndex = fromNode.outputs.findIndex(o => o.id === finalFromPoint);
+        if (outputIndex >= 0 && fromNode.outNodeIds && fromNode.outNodeIds[outputIndex]) {
+            const outNode = nodes.find(n => n.id === fromNode.outNodeIds[outputIndex]);
+            if (outNode) {
+                finalFromNode = outNode.id;
+                finalFromPoint = outNode.outputs[0].id; // Connect from OUT node's output
+            }
+        }
+    }
+
+    // If connecting TO a group node input, find the IN node
+    if (toNode && toNode.isGroup) {
+        const inNode = nodes.find(n => n.isInNode && n.linkedGroupNode === toNode.id);
+        if (inNode) {
+            finalToNode = inNode.id;
+            finalToPoint = inNode.inputs[0].id; // Connect to IN node's input
+        }
+    }
+
+    // Check if connection already exists from this output or to this input
+    const existingFromConnection = connections.find(c =>
+        c.fromNode === finalFromNode && c.fromPoint === finalFromPoint
+    );
+    const existingToConnection = connections.find(c =>
+        c.toNode === finalToNode && c.toPoint === finalToPoint
+    );
+
+    if (existingFromConnection) {
+        // Remove old connection from this output
+        deleteConnection(existingFromConnection.id);
+    }
+
+    if (existingToConnection) {
+        // Remove old connection to this input
+        deleteConnection(existingToConnection.id);
+    }
+
     const connection = {
         id: connectionIdCounter++,
-        fromNode: connectionStart.nodeId,
-        fromPoint: connectionStart.pointId,
-        toNode: toNodeId,
-        toPoint: toPointId
+        fromNode: finalFromNode,
+        fromPoint: finalFromPoint,
+        toNode: finalToNode,
+        toPoint: finalToPoint,
+        connectionType: fromType // Store the connection type
     };
 
     connections.push(connection);
@@ -101,24 +175,48 @@ function renderConnection(connection) {
 }
 
 function updateConnection(connection) {
-    const fromNode = nodes.find(n => n.id === connection.fromNode);
-    const toNode = nodes.find(n => n.id === connection.toNode);
+    let fromNode = nodes.find(n => n.id === connection.fromNode);
+    let toNode = nodes.find(n => n.id === connection.toNode);
     const line = document.getElementById(`conn-${connection.id}`);
 
     if (!fromNode || !toNode || !line) return;
 
-    const outputIndex = fromNode.outputs.findIndex(o => o.id === connection.fromPoint);
-    const inputIndex = toNode.inputs.findIndex(i => i.id === connection.toPoint);
+    // Visual node for rendering (might be different from data node)
+    let visualFromNode = fromNode;
+    let visualToNode = toNode;
+    let visualOutputIndex = 0;
+    let visualInputIndex = 0;
 
-    if (outputIndex === -1 || inputIndex === -1) return;
+    // If FROM node is OUT node, use the group node position instead
+    if (fromNode.isOutNode && fromNode.linkedGroupNode) {
+        visualFromNode = nodes.find(n => n.id === fromNode.linkedGroupNode);
+        if (!visualFromNode) visualFromNode = fromNode;
+        // Find which output index this OUT node corresponds to
+        visualOutputIndex = fromNode.outIndex !== undefined ? fromNode.outIndex : 0;
+    } else {
+        visualOutputIndex = fromNode.outputs.findIndex(o => o.id === connection.fromPoint);
+    }
 
-    const outputCount = fromNode.outputs.length;
-    const inputCount = toNode.inputs.length;
+    // If TO node is IN node, use the group node position instead
+    if (toNode.isInNode && toNode.linkedGroupNode) {
+        visualToNode = nodes.find(n => n.id === toNode.linkedGroupNode);
+        if (!visualToNode) visualToNode = toNode;
+        // IN node always uses input index 0 on the group
+        visualInputIndex = 0;
+    } else {
+        visualInputIndex = toNode.inputs.findIndex(i => i.id === connection.toPoint);
+    }
 
-    const x1 = fromNode.x + fromNode.width;
-    const y1 = fromNode.y + 40 + (fromNode.height - 40) * ((outputIndex + 1) / (outputCount + 1));
-    const x2 = toNode.x;
-    const y2 = toNode.y + 40 + (toNode.height - 40) * ((inputIndex + 1) / (inputCount + 1));
+    if (visualOutputIndex === -1 || visualInputIndex === -1) return;
+
+    const outputCount = Math.max(visualFromNode.outputs.length, 1);
+    const inputCount = Math.max(visualToNode.inputs.length, 1);
+
+    // Use visual node positions for drawing
+    const x1 = visualFromNode.x + visualFromNode.width;
+    const y1 = visualFromNode.y + 40 + (visualFromNode.height - 40) * ((visualOutputIndex + 1) / (outputCount + 1));
+    const x2 = visualToNode.x;
+    const y2 = visualToNode.y + 40 + (visualToNode.height - 40) * ((visualInputIndex + 1) / (inputCount + 1));
 
     const path = createBezierPath(x1, y1, x2, y2);
     line.setAttribute('d', path);
@@ -133,8 +231,8 @@ function updateConnection(connection) {
 
         const stops = gradient.querySelectorAll('stop');
         if (stops.length >= 2) {
-            stops[0].setAttribute('stop-color', fromNode.color);
-            stops[1].setAttribute('stop-color', toNode.color);
+            stops[0].setAttribute('stop-color', visualFromNode.color);
+            stops[1].setAttribute('stop-color', visualToNode.color);
         }
     }
 }
@@ -151,6 +249,22 @@ function updateConnectionsForNode(nodeId) {
             updateConnection(conn);
         }
     });
+}
+
+function updateGroupNodeConnections(groupNodeId) {
+    // Find all IN/OUT nodes that belong to this group
+    const inNode = nodes.find(n => n.isInNode && n.linkedGroupNode === groupNodeId);
+    const groupNode = nodes.find(n => n.id === groupNodeId);
+
+    if (inNode) {
+        updateConnectionsForNode(inNode.id);
+    }
+
+    if (groupNode && groupNode.outNodeIds) {
+        groupNode.outNodeIds.forEach(outNodeId => {
+            updateConnectionsForNode(outNodeId);
+        });
+    }
 }
 
 function updateAllConnections() {
