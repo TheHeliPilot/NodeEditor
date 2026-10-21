@@ -1,0 +1,56 @@
+<%- include('partials/head', { pageTitle: 'Prihlásení' }) %>
+<% const fmt = ms => new Date(ms).toLocaleString('sk', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
+   const qs = new URLSearchParams(Object.entries(filter).filter(([, v]) => v)).toString();
+   const back = '/signups' + (qs ? '?' + qs : ''); %>
+<header class="page-head">
+  <div>
+    <h1>Prihlásení</h1>
+    <p class="sub"><%= rows.length === total ? `${total} ľudí` : `${rows.length} z ${total} ľudí` %></p>
+  </div>
+  <a class="btn" href="/signups.csv<%= qs ? '?' + qs : '' %>">Export CSV</a>
+</header>
+
+<form class="toolbar" method="get">
+  <input type="search" name="q" value="<%= filter.q %>" placeholder="Hľadať meno alebo hru">
+  <select name="game" onchange="this.form.submit()">
+    <option value="">Všetky hry</option>
+    <% for (const g of games) { %><option value="<%= g.id %>" <%= String(g.id) === filter.gameId ? 'selected' : '' %>><%= g.name %> (<%= g.signups %>)</option><% } %>
+    <option value="other" <%= filter.gameId === 'other' ? 'selected' : '' %>>Iné</option>
+  </select>
+  <button class="btn" type="submit">Filtrovať</button>
+  <% if (qs) { %><a class="link" href="/signups">Zrušiť filter</a><% } %>
+</form>
+
+<% if (!rows.length) { %>
+  <div class="panel empty-state">
+    <p><%= total ? 'Nikto nezodpovedá filtru.' : 'Zatiaľ sa nikto neprihlásil. Pošli správu s tlačidlom v nastaveniach.' %></p>
+  </div>
+<% } else { %>
+<div class="table-wrap">
+<table class="data">
+  <thead><tr><th>Hráč</th><th>Hry</th><th>Iné</th><th class="r">Prihlásený</th><th></th></tr></thead>
+  <tbody>
+  <% for (const r of rows) { %>
+    <tr>
+      <td class="user">
+        <% if (r.avatar_url) { %><img src="<%= r.avatar_url %>" alt="" width="28" height="28" loading="lazy"><% } else { %><span class="avatar"><%= (r.display_name || r.username).charAt(0) %></span><% } %>
+        <div><strong><%= r.display_name || r.username %></strong><span class="handle">@<%= r.username %></span></div>
+      </td>
+      <td><div class="chips"><% for (const g of r.games) { %><span class="chip"><%= g %></span><% } %></div></td>
+      <td class="muted"><%= r.other_games || '' %></td>
+      <td class="r num muted" title="<%= new Date(r.created_at).toISOString() %>"><%= fmt(r.created_at) %></td>
+      <td class="r">
+        <form method="post" action="/signups/<%= r.user_id %>/remove" data-confirm="Odstrániť prihlášku <%= r.username %>? Stratí aj roly.">
+          <input type="hidden" name="back" value="<%= back %>">
+          <button class="icon-btn" type="submit" title="Odstrániť prihlášku" aria-label="Odstrániť">
+            <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </form>
+      </td>
+    </tr>
+  <% } %>
+  </tbody>
+</table>
+</div>
+<% } %>
+<%- include('partials/foot') %>

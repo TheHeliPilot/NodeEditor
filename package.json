@@ -1,0 +1,26 @@
+{
+  "name": "event-signup-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Discord bot for gaming-event signups with a web admin panel and server analytics",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --no-warnings=ExperimentalWarning src/index.js",
+    "demo": "node --no-warnings=ExperimentalWarning scripts/demo.js --fresh",
+    "screenshots": "node scripts/screenshots.js"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/ibm-plex-sans": "^5.3.0",
+    "discord.js": "^14.27.0",
+    "ejs": "^3.1.10",
+    "express": "^5.3.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.64.1"
+  }
+}

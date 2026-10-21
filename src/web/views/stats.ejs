@@ -1,0 +1,155 @@
+<%- include('partials/head', { pageTitle: 'Štatistiky' }) %>
+<%
+  const n = v => Math.round(v).toLocaleString('sk');
+  const d1 = v => v.toLocaleString('sk', { maximumFractionDigits: 1, minimumFractionDigits: 1 });
+  const pct = v => v === null || v === undefined || Number.isNaN(v) ? '–' : `${Math.round(v * 100)} %`;
+  const dur = s => { const m = Math.round(s / 60); return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')} min`; };
+  const k = s.kpi;
+  const maxCh = Math.max(1, ...s.channels.map(c => c.value));
+  const maxGame = Math.max(1, s.otherCount, ...s.games.map(g => g.value));
+  const f = s.funnel;
+%>
+<header class="page-head">
+  <div>
+    <h1>Štatistiky</h1>
+    <p class="sub">Posledných <%= range %> dní · <%= charts.shortDate(s.start) %> – <%= charts.shortDate(s.today) %> · aktívny = napísal správu alebo bol aspoň minútu vo voice</p>
+  </div>
+  <nav class="seg" aria-label="Obdobie">
+    <% for (const r of ranges) { %><a href="?range=<%= r %>" class="<%= r === range ? 'on' : '' %>"><%= r %> dní</a><% } %>
+  </nav>
+</header>
+
+<section class="figures">
+  <div class="fig hero">
+    <span class="label">Aktívni dnes</span>
+    <span class="value"><%= n(k.dauToday) %></span>
+    <span class="meta">priemer <%= d1(k.dauAvg) %> / deň</span>
+  </div>
+  <div class="fig">
+    <span class="label">Aktívni za 7 dní</span>
+    <span class="value"><%= n(k.wau) %></span>
+    <span class="meta"><%= s.memberCount ? `z ${n(s.memberCount)} členov` : `${n(k.rangeActive)} za ${range} dní` %></span>
+  </div>
+  <div class="fig">
+    <span class="label">Správy dnes</span>
+    <span class="value"><%= n(k.messagesToday) %></span>
+    <span class="meta">priemer <%= n(k.messagesAvg) %> / deň</span>
+  </div>
+  <div class="fig">
+    <span class="label">Správy za 7 dní</span>
+    <span class="value"><%= n(k.messagesWeek) %></span>
+    <span class="meta"><%= d1(k.avgMessagesPerUser) %> na človeka</span>
+  </div>
+  <div class="fig">
+    <span class="label">Prihlásení na event</span>
+    <span class="value"><%= n(f.signupTotal) %></span>
+    <span class="meta"><a href="/signups">zoznam →</a></span>
+  </div>
+</section>
+
+<div class="grid two">
+  <section class="panel">
+    <h2>Unikátni aktívni ľudia za deň</h2>
+    <%- charts.line(s.dau, { name: 'Aktívni ľudia za deň', unit: ' ľudí' }) %>
+  </section>
+  <section class="panel">
+    <h2>Správy za deň</h2>
+    <%- charts.line(s.messages, { name: 'Správy za deň', unit: ' správ' }) %>
+  </section>
+  <section class="panel">
+    <h2>Unikátni aktívni za týždeň <span class="h-note">7-dňové okná, posledných 12</span></h2>
+    <%- charts.columns(s.weekly.map(w => ({ day: w.day, value: w.active, from: w.label })), { name: 'Aktívni za týždeň', unit: ' ľudí', label: p => `${charts.shortDate(p.from)}–${charts.shortDate(p.day)}` }) %>
+  </section>
+  <section class="panel">
+    <h2>Správy za týždeň <span class="h-note">7-dňové okná, posledných 12</span></h2>
+    <%- charts.columns(s.weekly.map(w => ({ day: w.day, value: w.messages, from: w.label })), { name: 'Správy za týždeň', unit: ' správ', label: p => `${charts.shortDate(p.from)}–${charts.shortDate(p.day)}` }) %>
+  </section>
+</div>
+
+<div class="grid two">
+  <section class="panel">
+    <h2>Správy podľa kanála</h2>
+    <% if (!s.channels.length) { %><p class="empty">Zatiaľ žiadne správy v tomto období.</p><% } %>
+    <table class="bars">
+      <% for (const c of s.channels.slice(0, 12)) { %>
+      <tr data-tip="#<%= c.name %>: <%= n(c.value) %> správ od <%= n(c.users) %> ľudí">
+        <th>#<%= c.name %></th>
+        <td class="bar-cell"><span class="bar" style="width: <%= (c.value / maxCh * 100).toFixed(1) %>%"></span></td>
+        <td class="num"><%= n(c.value) %></td>
+      </tr>
+      <% } %>
+    </table>
+    <% if (s.channels.length > 12) { %><p class="fine">+ <%= s.channels.length - 12 %> ďalších kanálov</p><% } %>
+  </section>
+
+  <section class="panel">
+    <h2>Priemery a návyky</h2>
+    <dl class="facts">
+      <div><dt>Priemer správ na človeka</dt><dd><%= d1(k.avgMessagesPerUser) %></dd><dd class="why"><%= n(k.posters) %> ľudí písalo za <%= range %> dní</dd></div>
+      <div><dt>Priemerný čas vo voice na človeka</dt><dd><%= dur(k.avgVoicePerUser) %></dd><dd class="why"><%= n(k.voiceUsers) %> ľudí vo voice, spolu <%= dur(k.voiceTotal) %></dd></div>
+      <div><dt>Postujú aspoň raz denne</dt><dd><%= pct(s.daily.pct) %></dd><dd class="why"><%= n(s.daily.everyDay) %> z <%= n(s.daily.weekPosters) %> ľudí, ktorí písali tento týždeň, písali všetkých 7 dní</dd></div>
+      <div><dt>Denne píše</dt><dd><%= d1(s.daily.avgDailyPosters) %></dd><dd class="why">ľudí v priemere za posledných 7 dní<%= s.daily.memberPct !== null ? ` · ${pct(s.daily.memberPct)} členov` : '' %></dd></div>
+      <div><dt>Stickiness (DAU / WAU)</dt><dd><%= pct(k.stickiness) %></dd><dd class="why">koľko z týždenne aktívnych príde v priemerný deň</dd></div>
+    </dl>
+  </section>
+
+  <section class="panel">
+    <h2>Funnel: gaming → #<%= discussionName || 'diskusie' %></h2>
+    <% if (!f.discussionChannelId) { %>
+      <p class="empty">Vyber kanál diskusie v <a href="/settings">nastaveniach</a>.</p>
+    <% } else { %>
+      <% const steps = [
+        ['Prihlásení na event', f.signupTotal, null],
+        [`Aktívni na serveri (${range} dní)`, f.signupActive, f.signupTotal],
+        [`Písali v #${discussionName}`, f.signupDiscussion, f.signupTotal],
+      ]; const top = Math.max(1, f.signupTotal); %>
+      <ol class="funnel">
+        <% steps.forEach(([label, val, of], i) => { %>
+        <li>
+          <div class="f-row"><span><%= label %></span><span class="num"><%= n(val) %><% if (of !== null) { %> <em><%= pct(of ? val / of : null) %></em><% } %></span></div>
+          <div class="f-track"><span style="width: <%= (val / top * 100).toFixed(1) %>%"></span></div>
+        </li>
+        <% }) %>
+      </ol>
+      <p class="fine">Celkovo: <strong><%= pct(f.rangeActive ? f.activeDiscussion / f.rangeActive : null) %></strong> všetkých aktívnych ľudí (<%= n(f.activeDiscussion) %> z <%= n(f.rangeActive) %>) písalo v #<%= discussionName %>.</p>
+    <% } %>
+  </section>
+
+  <section class="panel">
+    <h2>Retencia <span class="h-note">od <%= s.usesJoinDate ? 'príchodu na server' : 'prvej aktivity' %>, posledných 90 dní</span></h2>
+    <div class="retention">
+      <% for (const r of s.retention) { %>
+      <div class="ret">
+        <span class="label">D<%= r.n %></span>
+        <span class="value"><%= pct(r.pct) %></span>
+        <div class="meter"><span style="width: <%= ((r.pct || 0) * 100).toFixed(1) %>%"></span></div>
+        <span class="meta"><%= n(r.kept) %> z <%= n(r.eligible) %> sa vrátilo na <%= r.n %>. deň</span>
+      </div>
+      <% } %>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Ľudia podľa hry</h2>
+    <table class="bars">
+      <% for (const g of [...s.games].sort((a, b) => b.value - a.value)) { %>
+      <tr data-tip="<%= g.name %>: <%= n(g.value) %> ľudí">
+        <th><%= g.name %></th>
+        <td class="bar-cell"><span class="bar" style="width: <%= (g.value / maxGame * 100).toFixed(1) %>%"></span></td>
+        <td class="num"><%= n(g.value) %></td>
+      </tr>
+      <% } %>
+      <tr class="other" data-tip="Iné (vlastné hry): <%= n(s.otherCount) %> ľudí">
+        <th>Iné</th>
+        <td class="bar-cell"><span class="bar" style="width: <%= (s.otherCount / maxGame * 100).toFixed(1) %>%"></span></td>
+        <td class="num"><%= n(s.otherCount) %></td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h2>Prihlásení spolu</h2>
+    <%- charts.line(s.signupSeries, { name: 'Prihlásení spolu', unit: ' prihlásených' }) %>
+  </section>
+</div>
+<%- include('partials/foot') %>

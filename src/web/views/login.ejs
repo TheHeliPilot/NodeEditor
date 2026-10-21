@@ -1,0 +1,12 @@
+<%- include('partials/bare-head', { title: 'Prihlásenie' }) %>
+<form class="auth" method="post" action="/login">
+  <h1>Prihlásenie</h1>
+  <p class="lead">Admin panel eventu</p>
+  <% if (error) { %><p class="form-error"><%= error %></p><% } %>
+  <% if (needsSetup) { %><p class="note">Zatiaľ nie je žiadny admin. Odkaz na vytvorenie prvého účtu je v logu servera.</p><% } %>
+  <label>Meno<input name="username" value="<%= username %>" autocomplete="username" required autofocus></label>
+  <label>Heslo<input name="password" type="password" autocomplete="current-password" required></label>
+  <button class="btn primary wide" type="submit">Prihlásiť sa</button>
+  <p class="fine">Nový admin? Prihlasovací odkaz ti vytvorí existujúci admin.</p>
+</form>
+</div></body></html>

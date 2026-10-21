@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= typeof pageTitle !== 'undefined' ? pageTitle + ' · ' : '' %>Event panel</title>
+<link rel="stylesheet" href="/fonts/ibm-plex-sans/400.css">
+<link rel="stylesheet" href="/fonts/ibm-plex-sans/500.css">
+<link rel="stylesheet" href="/fonts/ibm-plex-sans/600.css">
+<link rel="stylesheet" href="/fonts/ibm-plex-mono/400.css">
+<link rel="stylesheet" href="/static/style.css">
+<link rel="icon" href="/static/icon.svg">
+</head>
+<body>
+<% const nav = [
+  ['/', 'Štatistiky', 'M3 20h18M6 16v-5M11 16V6M16 16v-8M21 16v-3'],
+  ['/signups', 'Prihlásení', 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M21 19v-1a4 4 0 0 0-3-3.9M16 3.1a3.5 3.5 0 0 1 0 6.8'],
+  ['/games', 'Hry', 'M6 11h4M8 9v4M15 12h.01M18 10h.01M17.3 5H6.7a4 4 0 0 0-4 3.6L2 15a3 3 0 0 0 5.4 2l1.1-1.5h7l1.1 1.5a3 3 0 0 0 5.4-2l-.7-6.4A4 4 0 0 0 17.3 5'],
+  ['/settings', 'Nastavenia', 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6'],
+  ['/admins', 'Admini', 'M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z'],
+]; %>
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"><%= (serverName || 'E').trim().charAt(0).toUpperCase() %></span>
+      <div>
+        <div class="brand-name"><%= serverName || 'Event panel' %></div>
+        <div class="brand-sub <%= botReady ? 'on' : 'off' %>"><span class="dot"></span><%= botReady ? 'Bot online' : 'Bot offline' %></div>
+      </div>
+    </div>
+    <nav>
+      <% for (const [href, label, d] of nav) { const active = href === '/' ? path === '/' : path.startsWith(href); %>
+        <a href="<%= href %>" class="<%= active ? 'active' : '' %>">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="<%= d %>"/></svg><%= label %>
+        </a>
+      <% } %>
+    </nav>
+    <form class="who" method="post" action="/logout">
+      <span><%= admin.username %></span>
+      <button class="link" type="submit">Odhlásiť</button>
+    </form>
+  </aside>
+  <main>
+    <% if (flash) { %><div class="flash <%= flash.kind %>" role="status"><%= flash.text %></div><% } %>

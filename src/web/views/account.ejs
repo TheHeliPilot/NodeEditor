@@ -1,0 +1,11 @@
+<%- include('partials/bare-head', { title }) %>
+<form class="auth" method="post">
+  <h1><%= title %></h1>
+  <% if (lead) { %><p class="lead"><%= lead %></p><% } %>
+  <% if (error) { %><p class="form-error"><%= error %></p><% } %>
+  <label>Meno<input name="username" value="<%= username %>" autocomplete="username" required autofocus minlength="3" maxlength="32"></label>
+  <label>Heslo <span class="hint">aspoň 10 znakov</span><input name="password" type="password" autocomplete="new-password" required minlength="10"></label>
+  <label>Heslo znova<input name="password2" type="password" autocomplete="new-password" required minlength="10"></label>
+  <button class="btn primary wide" type="submit">Vytvoriť účet</button>
+</form>
+</div></body></html>

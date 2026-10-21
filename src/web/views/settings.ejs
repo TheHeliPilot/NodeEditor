@@ -1,0 +1,70 @@
+<%- include('partials/head', { pageTitle: 'Nastavenia' }) %>
+<header class="page-head">
+  <div>
+    <h1>Nastavenia</h1>
+    <p class="sub">Kam bot pošle prihlásenie a akú rolu dá prihláseným</p>
+  </div>
+</header>
+
+<form method="post" action="/settings" class="settings">
+  <section class="panel form-panel">
+    <h2>Prihlasovacia správa</h2>
+    <label>Kanál
+      <select name="signup_channel_id">
+        <option value="">Vyber kanál</option>
+        <% let cat; for (const c of channels) { if (c.category !== cat) { if (cat !== undefined) { %></optgroup><% } cat = c.category; %><optgroup label="<%= cat || 'Bez kategórie' %>"><% } %>
+          <option value="<%= c.id %>" <%= c.id === settings.signupChannel ? 'selected' : '' %> <%= c.canSend ? '' : 'disabled' %>>#<%= c.name %><%= c.canSend ? '' : ' (bot nemá prístup)' %></option>
+        <% } if (cat !== undefined) { %></optgroup><% } %>
+      </select>
+    </label>
+    <label>Text nad tlačidlom <span class="hint">nepovinné, prázdne = len tlačidlo</span>
+      <textarea name="signup_text" rows="3" maxlength="1800" placeholder="napr. Prihlás sa na LAN turnaj 15. 11."><%= settings.signupText %></textarea>
+    </label>
+    <div class="preview" aria-label="Náhľad správy v Discorde">
+      <span class="preview-label">Náhľad</span>
+      <div class="dc-msg">
+        <span class="dc-avatar"></span>
+        <div>
+          <div class="dc-name">Event Bot <span class="dc-tag">APP</span></div>
+          <% if (settings.signupText) { %><div class="dc-text"><%= settings.signupText %></div><% } %>
+          <span class="dc-button">Prihlásiť sa</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel form-panel">
+    <h2>Roly a kanály</h2>
+    <label>Rola za prihlásenie
+      <select name="signup_role_id">
+        <option value="">Žiadna</option>
+        <% for (const r of roles) { %><option value="<%= r.id %>" <%= r.id === settings.signupRole ? 'selected' : '' %> <%= r.assignable ? '' : 'disabled' %>>@<%= r.name %><%= r.assignable ? '' : ' (nad rolou bota)' %></option><% } %>
+      </select>
+    </label>
+    <label>Kanál diskusie <span class="hint">pre funnel v štatistikách</span>
+      <select name="discussion_channel_id">
+        <option value="">Žiadny</option>
+        <% for (const c of channels) { %><option value="<%= c.id %>" <%= c.id === settings.discussionChannel ? 'selected' : '' %>>#<%= c.name %></option><% } %>
+      </select>
+    </label>
+    <p class="fine">Roly pre jednotlivé hry nastavíš na stránke <a href="/games">Hry</a>.</p>
+  </section>
+
+  <div class="form-actions">
+    <button class="btn primary" type="submit">Uložiť nastavenia</button>
+  </div>
+</form>
+
+<section class="panel actions-panel">
+  <div>
+    <h2>Odoslať do Discordu</h2>
+    <p class="fine">
+      <% if (settings.messageId) { %>Aktuálna správa: <a href="https://discord.com/channels/<%= guildId %>/<%= settings.messageChannel %>/<%= settings.messageId %>" target="_blank" rel="noopener">otvoriť v Discorde</a>. Nové odoslanie starú správu zmaže.<% } else { %>Správa ešte nebola odoslaná.<% } %>
+    </p>
+  </div>
+  <div class="row">
+    <form method="post" action="/settings/post"><button class="btn primary" type="submit" <%= botReady ? '' : 'disabled' %>>Odoslať prihlasovaciu správu</button></form>
+    <form method="post" action="/settings/apply-role" data-confirm="Pridať rolu za prihlásenie všetkým už prihláseným?"><button class="btn" type="submit" <%= botReady && settings.signupRole ? '' : 'disabled' %>>Dať rolu všetkým prihláseným</button></form>
+  </div>
+</section>
+<%- include('partials/foot') %>

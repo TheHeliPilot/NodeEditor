@@ -1,0 +1,49 @@
+<%- include('partials/head', { pageTitle: 'Hry' }) %>
+<header class="page-head">
+  <div>
+    <h1>Hry</h1>
+    <p class="sub">Ponuka v otázke „Aké hry hrávaš?“ · posledná možnosť je vždy <em>Iné</em> s vlastným textom</p>
+  </div>
+</header>
+
+<form class="toolbar add" method="post" action="/games">
+  <input name="name" placeholder="Názov hry, napr. Minecraft" maxlength="80" required <%= list.length >= max ? 'disabled' : '' %>>
+  <button class="btn primary" type="submit" <%= list.length >= max ? 'disabled' : '' %>>Pridať hru</button>
+  <span class="fine"><%= list.length %> / <%= max %></span>
+</form>
+
+<div class="table-wrap">
+<table class="data games">
+  <thead><tr><th class="ord">#</th><th>Názov</th><th>Rola pri výbere</th><th class="r">Ľudia</th><th></th></tr></thead>
+  <tbody>
+  <% list.forEach((g, i) => { %>
+    <tr>
+      <td class="ord num muted"><%= i + 1 %></td>
+      <td colspan="2">
+        <form class="inline" method="post" action="/games/<%= g.id %>" id="g<%= g.id %>">
+          <input name="name" value="<%= g.name %>" maxlength="80" aria-label="Názov">
+          <select name="role_id" aria-label="Rola">
+            <option value="">Bez roly</option>
+            <% for (const r of roles) { %><option value="<%= r.id %>" <%= r.id === g.role_id ? 'selected' : '' %> <%= r.assignable ? '' : 'disabled' %>>@<%= r.name %><%= r.assignable ? '' : ' (nad botom)' %></option><% } %>
+          </select>
+          <button class="btn quiet" type="submit">Uložiť</button>
+        </form>
+      </td>
+      <td class="r num"><%= g.signups %></td>
+      <td class="r actions">
+        <form method="post" action="/games/<%= g.id %>/move"><input type="hidden" name="dir" value="up"><button class="icon-btn" title="Vyššie" <%= i === 0 ? 'disabled' : '' %>><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button></form>
+        <form method="post" action="/games/<%= g.id %>/move"><input type="hidden" name="dir" value="down"><button class="icon-btn" title="Nižšie" <%= i === list.length - 1 ? 'disabled' : '' %>><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button></form>
+        <form method="post" action="/games/<%= g.id %>/delete" data-confirm="Odstrániť <%= g.name %>? <%= g.signups %> ľuďom zmizne z prihlášky."><button class="icon-btn danger" title="Odstrániť"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button></form>
+      </td>
+    </tr>
+  <% }) %>
+    <tr class="fixed">
+      <td class="ord num muted"><%= list.length + 1 %></td>
+      <td colspan="2"><span class="muted">Iné… · používateľ napíše vlastné hry</span></td>
+      <td></td><td></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<p class="fine">Rola pri hre je voliteľná. Bot ju pridá, keď si niekto hru vyberie, a odoberie, keď ju zruší. Rola musí byť v zozname rolí pod rolou bota.</p>
+<%- include('partials/foot') %>
