@@ -72,9 +72,9 @@ function columns(points, { unit = '', name = '', label = p => shortDate(p.day) }
   points.forEach((p, i) => {
     const cx = L + band * i + band / 2;
     const h = ((H - T - B) * p.value) / max;
-    const r = Math.min(4, h);
+    const r = Math.min(1, h);
     const x0 = cx - bw / 2, y0 = base - h;
-    // Rounded top, square at the baseline.
+    // Barely softened top, square at the baseline.
     const d = h <= 0 ? '' : `M${x0},${base}V${y0 + r}Q${x0},${y0} ${x0 + r},${y0}H${x0 + bw - r}Q${x0 + bw},${y0} ${x0 + bw},${y0 + r}V${base}Z`;
     bars += `<path class="col${i === points.length - 1 ? ' current' : ''}" d="${d}"/>`;
     bars += `<rect class="hit" x="${cx - band / 2}" y="${T}" width="${band}" height="${H - T - B}" data-tip="${esc(`${label(p)}: ${p.value.toLocaleString('sk')}${unit}`)}"/>`;
